@@ -1,0 +1,17 @@
+# 敏感信息与环境配置
+.env
+
+# 运行产物与缓存
+storage/
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# IDE 与工具目录
+.trae/
+.vscode/
+.claude/
+
+# 系统文件
+Thumbs.db
+.DS_Store
