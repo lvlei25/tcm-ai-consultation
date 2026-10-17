@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 """中医在线问诊系统主界面：问诊单填写 + RAG 诊断结果展示"""
+import time
+
 import streamlit as st
 
 from config import TOP_K
@@ -288,11 +290,23 @@ if submit:
         # 步骤 3：结合医案证据流式生成诊断，完成后解析为结构化小节
         with st.status("步骤 3/3 生成诊断结果", expanded=True) as step3:
             st.write("正在结合医案证据流式生成诊断 ...")
+            wait_note = st.empty()
+            wait_note.info("大模型推理通常需要 2~3 分钟才返回首个输出，请耐心等待 ...")
+
+            def _stream_with_wait_note():
+                """流式输出包装：首个输出块到达后清除等待提示，避免与正文混排"""
+                started = time.time()
+                for piece in stream_diagnosis(form_dict, evidences):
+                    wait_note.caption(f"已等待 {time.time() - started:.0f} 秒，开始输出")
+                    wait_note.empty()
+                    yield piece
+
             try:
-                result = st.write_stream(stream_diagnosis(form_dict, evidences))
+                result = st.write_stream(_stream_with_wait_note())
                 sections = parse_diagnosis_sections(result)
                 step3.update(label="步骤 3/3 生成诊断结果 完成", state="complete")
             except Exception as exc:
+                wait_note.empty()
                 st.error(f"生成诊断失败：{exc}")
                 step3.update(label="步骤 3/3 生成诊断结果 失败", state="error")
                 st.stop()

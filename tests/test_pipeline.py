@@ -14,6 +14,7 @@ from pipeline.form_query import (
     check_query_length,
     validate_form,
 )
+from config import EVIDENCE_SNIPPET_LEN
 
 # 标准问诊单样例
 FORM = {
@@ -119,3 +120,16 @@ def test_check_query_length_boundary():
     assert check_query_length(ok) == ok
     with pytest.raises(ValueError):
         check_query_length("字" * (MAX_QUERY_LEN + 1))
+
+
+def test_format_evidences_truncates_long_text():
+    """用例 48（边界）：超过 EVIDENCE_SNIPPET_LEN 的证据被截断并标注，短证据不变"""
+    long_text = "医" * (EVIDENCE_SNIPPET_LEN + 50)
+    block = format_evidences([{"text": long_text, "metadata": {"source": "a.md"}}])
+    assert "医" * EVIDENCE_SNIPPET_LEN in block
+    assert ("医" * (EVIDENCE_SNIPPET_LEN + 50)) not in block
+    assert "（原文过长已截断）" in block
+    short_block = format_evidences(
+        [{"text": "归脾汤主之。", "metadata": {"source": "a.md"}}]
+    )
+    assert "（原文过长已截断）" not in short_block

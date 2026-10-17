@@ -4,7 +4,7 @@ import json
 
 from langchain_openai import ChatOpenAI
 
-from config import DASHSCOPE_BASE_URL, LLM_MODEL, get_api_key
+from config import DASHSCOPE_BASE_URL, EVIDENCE_SNIPPET_LEN, LLM_MODEL, get_api_key
 
 # 诊断推理的系统提示词
 _DIAGNOSIS_SYSTEM_PROMPT = (
@@ -60,8 +60,11 @@ def format_evidences(evidences: list[dict]) -> str:
         origin = " > ".join(
             str(value) for key, value in meta.items() if key != "source" and value
         )
+        content = ev["text"]
+        if len(content) > EVIDENCE_SNIPPET_LEN:
+            content = content[:EVIDENCE_SNIPPET_LEN] + "（原文过长已截断）"
         lines.append(
-            f"[{i}] 出处：{meta.get('source', '未知医案')} {origin}\n内容：{ev['text']}"
+            f"[{i}] 出处：{meta.get('source', '未知医案')} {origin}\n内容：{content}"
         )
     return "\n\n".join(lines) if lines else "（未检索到相关医案证据）"
 
