@@ -2,6 +2,7 @@
 """医案文档加载与分块：扫描 MD 医案，按标题层级切分并控制块长"""
 from pathlib import Path
 
+import jieba
 from langchain_core.documents import Document
 from langchain_text_splitters import (
     MarkdownHeaderTextSplitter,
@@ -12,6 +13,11 @@ from config import CHUNK_OVERLAP, CHUNK_SIZE, MEDICAL_CASES_DIR
 
 # 按 一级/二级/三级标题 切分，元数据键分别为 章/节/条
 _HEADERS_TO_SPLIT_ON = [("#", "章"), ("##", "节"), ("###", "条")]
+
+
+def tokenize(text: str) -> list[str]:
+    """统一分词入口，构建侧与检索侧共用"""
+    return jieba.lcut(text)
 
 
 def load_case_documents(cases_dir: Path = MEDICAL_CASES_DIR) -> list[Document]:

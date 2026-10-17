@@ -48,11 +48,16 @@ KB_DIR = PROJECT_ROOT / "storage" / "kb"                     # 知识库产物�
 FAISS_INDEX_DIR = KB_DIR / "faiss_index"                     # FAISS 索引目录
 CHUNKS_FILE = KB_DIR / "chunks.json"                         # 分块语料文件
 BM25_FILE = KB_DIR / "bm25.pkl"                              # BM25 索引文件
+KB_TMP_DIR = PROJECT_ROOT / "storage" / "kb_tmp"             # 构建临时目录（成功后替换 KB_DIR）
+EMB_CACHE_FILE = PROJECT_ROOT / "storage" / "emb_cache.pkl"  # 向量缓存（块文本哈希 → 向量）
 
 # ===== 检索参数 =====
 TOP_K = 6             # 混合检索最终返回的医案片段数
 CANDIDATE_N = 20      # 向量/BM25 各自召回的候选片段数
 VECTOR_WEIGHT = 0.6   # 向量检索融合权重（BM25 权重 = 1 - VECTOR_WEIGHT）
+
+# ===== 构建参数 =====
+EMBED_BATCH_SIZE = 25  # 单次向量化请求的文本块数
 
 # ===== 分块参数 =====
 CHUNK_SIZE = 500      # 单块最大字符数
