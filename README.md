@@ -34,7 +34,11 @@
 ## 环境要求
 
 - Python 3.10 及以上
-- 已安装依赖：streamlit、langchain-community、langchain-openai、langchain-text-splitters、faiss-cpu、rank-bm25、jieba、dashscope、pytest
+- 依赖清单见 requirements.txt（版本与开发环境一致），安装命令：
+
+```bash
+pip install -r requirements.txt -i https://pypi.tuna.tsinghua.edu.cn/simple
+```
 
 ## 配置
 
