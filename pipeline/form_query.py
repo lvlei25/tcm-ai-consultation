@@ -15,6 +15,18 @@ _QUERY_SYSTEM_PROMPT = (
 )
 
 
+MAX_QUERY_LEN = 80  # 检索语句最大字数，与提示词要求一致
+
+
+def check_query_length(query: str, max_len: int = MAX_QUERY_LEN) -> str:
+    """校验检索语句长度，超限抛出明确中文异常（纯函数，便于测试）"""
+    if len(query.strip()) > max_len:
+        raise ValueError(
+            f"检索语句长度为 {len(query.strip())} 字，超过 {max_len} 字上限，请调整问诊单内容"
+        )
+    return query
+
+
 def validate_form(form: dict) -> list[str]:
     """校验问诊单必填项，返回错误信息列表（空列表表示通过）"""
     errors = []
@@ -39,4 +51,4 @@ def generate_query(form: dict) -> str:
         base_url=DASHSCOPE_BASE_URL,
     )
     response = llm.invoke(build_query_messages(form))
-    return response.content.strip()
+    return check_query_length(response.content.strip())

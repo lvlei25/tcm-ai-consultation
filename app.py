@@ -5,7 +5,11 @@ import streamlit as st
 from config import TOP_K
 from kb.builder import load_knowledge_base
 from kb.retriever import HybridRetriever
-from pipeline.diagnoser import stream_diagnosis
+from pipeline.diagnoser import (
+    SECTION_TITLES,
+    parse_diagnosis_sections,
+    stream_diagnosis,
+)
 from pipeline.form_query import generate_query, validate_form
 
 st.set_page_config(page_title="中医在线问诊系统", layout="wide")
@@ -218,6 +222,14 @@ def render_evidences(evidences: list[dict], query: str = "") -> None:
             st.text(preview)
 
 
+def render_sections(sections: dict) -> None:
+    """按小节折叠展示结构化诊断结果"""
+    with st.expander("按小节查看诊断结果", expanded=False):
+        for title in SECTION_TITLES:
+            st.markdown(f"**{title}**")
+            st.markdown(sections[title])
+
+
 # ===== 诊断结果区域 =====
 st.markdown("---")
 st.markdown("### 诊断结果")
@@ -273,11 +285,12 @@ if submit:
                 step2.update(label="步骤 2/3 混合检索医案 失败", state="error")
                 st.stop()
 
-        # 步骤 3：结合医案证据流式生成诊断
+        # 步骤 3：结合医案证据流式生成诊断，完成后解析为结构化小节
         with st.status("步骤 3/3 生成诊断结果", expanded=True) as step3:
             st.write("正在结合医案证据流式生成诊断 ...")
             try:
                 result = st.write_stream(stream_diagnosis(form_dict, evidences))
+                sections = parse_diagnosis_sections(result)
                 step3.update(label="步骤 3/3 生成诊断结果 完成", state="complete")
             except Exception as exc:
                 st.error(f"生成诊断失败：{exc}")
@@ -286,12 +299,16 @@ if submit:
 
         # 保存本次诊断结果，避免页面交互后丢失
         st.session_state["diagnosis_result"] = result
+        st.session_state["diagnosis_sections"] = sections
         st.session_state["diagnosis_evidences"] = evidences
         st.session_state["diagnosis_query"] = query
+        render_sections(sections)
         render_evidences(evidences, query)
 elif "diagnosis_result" in st.session_state:
     # 复显最近一次诊断结果
     st.markdown(st.session_state["diagnosis_result"])
+    if "diagnosis_sections" in st.session_state:
+        render_sections(st.session_state["diagnosis_sections"])
     render_evidences(
         st.session_state.get("diagnosis_evidences", []),
         st.session_state.get("diagnosis_query", ""),

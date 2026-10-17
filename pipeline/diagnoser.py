@@ -21,6 +21,37 @@ _DIAGNOSIS_SYSTEM_PROMPT = (
 )
 
 
+# 诊断结果固定小节标题（顺序即展示顺序）
+SECTION_TITLES = [
+    "辨证分析",
+    "证型诊断",
+    "治法",
+    "推荐方药与加减",
+    "调护建议",
+    "引用医案依据",
+]
+
+
+def parse_diagnosis_sections(text: str) -> dict:
+    """按 `## ` 标题将诊断全文解析为 {标题: 正文} 字典（纯函数，便于测试）
+
+    缺少任一小节时抛出明确中文异常，不做补全或兜底
+    """
+    sections: dict[str, list[str]] = {}
+    current = None
+    for line in text.splitlines():
+        stripped = line.strip()
+        if stripped.startswith("## "):
+            current = stripped[3:].strip()
+            sections[current] = []
+        elif current:
+            sections[current].append(line)
+    missing = [title for title in SECTION_TITLES if title not in sections]
+    if missing:
+        raise ValueError(f"诊断结果缺少小节：{'、'.join(missing)}，无法解析为结构化结果")
+    return {title: "\n".join(sections[title]).strip() for title in SECTION_TITLES}
+
+
 def format_evidences(evidences: list[dict]) -> str:
     """将检索到的证据列表格式化为带编号的证据文本块（纯函数，便于测试）"""
     lines = []
@@ -56,3 +87,12 @@ def stream_diagnosis(form: dict, evidences: list[dict]):
     for chunk in llm.stream(build_diagnosis_messages(form, evidences)):
         if chunk.content:
             yield chunk.content
+
+
+def stream_diagnosis_structured(form: dict, evidences: list[dict]):
+    """流式生成并在结束后返回 (全文, 小节字典)
+
+    供界面按小节折叠展示；小节缺失时抛明确中文异常，不生成替代内容
+    """
+    full_text = "".join(stream_diagnosis(form, evidences))
+    return full_text, parse_diagnosis_sections(full_text)

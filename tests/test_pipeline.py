@@ -1,7 +1,19 @@
 # -*- coding: utf-8 -*-
 """pipeline 模块测试：问诊单校验、检索词消息构造与诊断消息构造"""
-from pipeline.diagnoser import build_diagnosis_messages, format_evidences
-from pipeline.form_query import build_query_messages, validate_form
+import pytest
+
+from pipeline.diagnoser import (
+    SECTION_TITLES,
+    build_diagnosis_messages,
+    format_evidences,
+    parse_diagnosis_sections,
+)
+from pipeline.form_query import (
+    MAX_QUERY_LEN,
+    build_query_messages,
+    check_query_length,
+    validate_form,
+)
 
 # 标准问诊单样例
 FORM = {
@@ -83,3 +95,27 @@ def test_build_diagnosis_messages_structure():
     assert "【问诊单】" in messages[1][1]
     assert "【医案证据】" in messages[1][1]
     assert "[1]" in messages[1][1]
+
+
+def test_parse_diagnosis_sections_full():
+    """用例 45（正常）：完整六小节文本解析出六个键且顺序与小节常量一致"""
+    text = "".join(f"## {title}\n{title}的内容。\n" for title in SECTION_TITLES)
+    sections = parse_diagnosis_sections(text)
+    assert list(sections.keys()) == SECTION_TITLES
+    assert sections["治法"] == "治法的内容。"
+
+
+def test_parse_diagnosis_sections_missing_raises():
+    """用例 46（异常）：缺少任一小节时抛出明确中文异常"""
+    text = "".join(f"## {title}\n内容。\n" for title in SECTION_TITLES[:-1])
+    with pytest.raises(ValueError) as exc_info:
+        parse_diagnosis_sections(text)
+    assert SECTION_TITLES[-1] in str(exc_info.value)
+
+
+def test_check_query_length_boundary():
+    """用例 47（边界）：80 字通过、81 字抛错"""
+    ok = "字" * MAX_QUERY_LEN
+    assert check_query_length(ok) == ok
+    with pytest.raises(ValueError):
+        check_query_length("字" * (MAX_QUERY_LEN + 1))
