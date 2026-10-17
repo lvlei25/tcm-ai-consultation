@@ -4,8 +4,9 @@ import time
 
 import streamlit as st
 
-from config import TOP_K
+from config import MCP_ENABLED, TOP_K
 from kb.builder import load_knowledge_base
+from kb.mcp_retriever import McpRetriever
 from kb.retriever import HybridRetriever
 from pipeline.diagnoser import (
     SECTION_TITLES,
@@ -54,17 +55,26 @@ st.markdown(
 )
 
 
-# ===== 知识库加载（进程内缓存一次） =====
+# ===== 知识库加载（进程内缓存一次，按 MCP 开关选择检索后端） =====
 @st.cache_resource(show_spinner="正在加载医案知识库 ...")
 def get_retriever() -> HybridRetriever:
-    """加载知识库产物并构造混合检索器"""
+    """加载本地知识库产物并构造混合检索器"""
     faiss_store, chunks, bm25 = load_knowledge_base()
     return HybridRetriever(faiss_store, chunks, bm25)
 
 
+@st.cache_resource(show_spinner="正在连接 MCP 知识库 ...")
+def get_mcp_retriever() -> McpRetriever:
+    """按 config 配置构造 MCP 知识库检索器"""
+    return McpRetriever()
+
+
 try:
-    retriever = get_retriever()
-except FileNotFoundError as exc:
+    if MCP_ENABLED:
+        retriever = get_mcp_retriever()
+    else:
+        retriever = get_retriever()
+except (FileNotFoundError, RuntimeError) as exc:
     st.error(str(exc))
     st.stop()
 

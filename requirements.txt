@@ -16,6 +16,9 @@ faiss-cpu==1.15.0
 rank-bm25==0.2.2
 jieba==0.42.1
 
+# MCP 知识库客户端（Streamable HTTP 传输）
+mcp==2.3.0
+
 # 阿里云百炼 SDK（DashScopeEmbeddings 依赖）
 dashscope==1.27.4
 

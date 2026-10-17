@@ -1,0 +1,14 @@
+---
+description: Git 操作约束：只生成指令，提交与否由用户手动决定
+alwaysApply: true
+enabled: true
+updatedAt: 2026-10-17T00:00:00.000Z
+provider:
+---
+
+# Git 操作：只生成指令，提交由用户决定
+
+1. 任何会产生变更的 Git 操作（`git add`、`git commit`、`git push`、`git merge`、`git rebase`、`git reset`、`git stash` 等）**一律不得直接执行**，只生成对应指令文本，由用户自行决定是否在终端执行。
+2. 只读查询命令（`git status`、`git diff`、`git log`、`git show`、`git branch` 等不影响仓库状态的命令）可以正常执行。
+3. 需要提交时，给出：建议的 `git add` 与 `git commit` 完整命令（含中文提交信息），并说明本次提交涵盖的文件与理由，然后停下等待用户确认或用户自行执行。
+4. 未经用户明确要求，不得以任何理由（包括"顺手提交""保持工作区干净"）代用户提交。
