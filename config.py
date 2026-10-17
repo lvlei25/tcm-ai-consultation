@@ -44,6 +44,7 @@ DASHSCOPE_BASE_URL = "https://dashscope.aliyuncs.com/compatible-mode/v1"
 
 # ===== 路径常量 =====
 MEDICAL_CASES_DIR = PROJECT_ROOT / "data" / "medical_cases"  # MD 医案目录
+MEDICAL_DICT_FILE = PROJECT_ROOT / "data" / "medical_dict.txt"  # 中医术语自定义词典（可选）
 KB_DIR = PROJECT_ROOT / "storage" / "kb"                     # 知识库产物目录
 FAISS_INDEX_DIR = KB_DIR / "faiss_index"                     # FAISS 索引目录
 CHUNKS_FILE = KB_DIR / "chunks.json"                         # 分块语料文件
@@ -54,7 +55,9 @@ EMB_CACHE_FILE = PROJECT_ROOT / "storage" / "emb_cache.pkl"  # 向量缓存（�
 # ===== 检索参数 =====
 TOP_K = 6             # 混合检索最终返回的医案片段数
 CANDIDATE_N = 20      # 向量/BM25 各自召回的候选片段数
-VECTOR_WEIGHT = 0.6   # 向量检索融合权重（BM25 权重 = 1 - VECTOR_WEIGHT）
+VECTOR_WEIGHT = 0.6   # 向量检索融合权重
+BM25_WEIGHT = 0.4     # BM25 关键词检索融合权重（与 VECTOR_WEIGHT 之和为 1）
+MMR_LAMBDA = 0.7      # MMR 去冗余系数：越大越偏相关度，越小越偏多样性
 
 # ===== 构建参数 =====
 EMBED_BATCH_SIZE = 25  # 单次向量化请求的文本块数

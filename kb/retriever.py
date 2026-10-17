@@ -1,8 +1,7 @@
 # -*- coding: utf-8 -*-
-"""混合检索器：FAISS 向量检索 + BM25 关键词检索，加权融合去重"""
-import jieba
-
-from config import CANDIDATE_N, TOP_K, VECTOR_WEIGHT
+"""混合检索器：FAISS 向量检索 + BM25 关键词检索，加权融合去重后 MMR 去冗余"""
+from config import BM25_WEIGHT, CANDIDATE_N, MMR_LAMBDA, TOP_K, VECTOR_WEIGHT
+from kb.loader import tokenize
 
 
 class HybridRetriever:
@@ -25,7 +24,7 @@ class HybridRetriever:
 
     def _bm25_hits(self, query: str, n: int) -> list[tuple]:
         """BM25 关键词检索，返回 (文本, 元数据, 得分) 列表，过滤零分项"""
-        tokens = jieba.lcut(query)
+        tokens = tokenize(query)
         scores = self.bm25.get_scores(tokens)
         order = sorted(range(len(scores)), key=lambda i: scores[i], reverse=True)[:n]
         return [
@@ -43,6 +42,39 @@ class HybridRetriever:
         if hi - lo == 0:
             return [0.5] * len(values)
         return [(v - lo) / (hi - lo) for v in values]
+
+    @staticmethod
+    def _jaccard(left: set[str], right: set[str]) -> float:
+        """两个分词集合的 Jaccard 相似度，用于 MMR 冗余度量"""
+        if not left or not right:
+            return 0.0
+        union = left | right
+        return len(left & right) / len(union)
+
+    @classmethod
+    def _mmr_select(cls, ranked: list[dict], top_k: int, lambda_: float = MMR_LAMBDA):
+        """按 MMR 从融合排序结果中选取 top_k，抑制内容高度重复的相邻块
+
+        得分 = lambda_ * 融合分 - (1 - lambda_) * 与已选块的最大相似度
+        """
+        if len(ranked) <= top_k:
+            return ranked
+        token_sets = [set(tokenize(item["text"])) for item in ranked]
+        picked: list[int] = []
+        rest = list(range(len(ranked)))
+        while rest and len(picked) < top_k:
+            best_index, best_value = None, None
+            for i in rest:
+                redundancy = max(
+                    (cls._jaccard(token_sets[i], token_sets[j]) for j in picked),
+                    default=0.0,
+                )
+                value = lambda_ * ranked[i]["score"] - (1 - lambda_) * redundancy
+                if best_value is None or value > best_value:
+                    best_index, best_value = i, value
+            picked.append(best_index)
+            rest.remove(best_index)
+        return [ranked[i] for i in picked]
 
     def retrieve(self, query: str, top_k: int = TOP_K) -> list[dict]:
         """混合检索：两路候选归一化加权融合，按文本去重取前 top_k
@@ -78,7 +110,7 @@ class HybridRetriever:
                         "bm25_score": 0.0,
                     },
                 )
-                item["score"] += (1 - VECTOR_WEIGHT) * s
+                item["score"] += BM25_WEIGHT * s
                 item["bm25_score"] += s
         ranked = sorted(fused.values(), key=lambda x: x["score"], reverse=True)
-        return ranked[:top_k]
+        return self._mmr_select(ranked, top_k)

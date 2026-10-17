@@ -9,15 +9,27 @@ from langchain_text_splitters import (
     RecursiveCharacterTextSplitter,
 )
 
-from config import CHUNK_OVERLAP, CHUNK_SIZE, MEDICAL_CASES_DIR
+from config import CHUNK_OVERLAP, CHUNK_SIZE, MEDICAL_CASES_DIR, MEDICAL_DICT_FILE
 
 # 按 一级/二级/三级标题 切分，元数据键分别为 章/节/条
 _HEADERS_TO_SPLIT_ON = [("#", "章"), ("##", "节"), ("###", "条")]
 
 
+def load_medical_dict(path=MEDICAL_DICT_FILE) -> bool:
+    """加载中医术语自定义词典，文件不存在时返回 False（词典为可选项）"""
+    if not path.exists():
+        return False
+    jieba.load_userdict(str(path))
+    return True
+
+
 def tokenize(text: str) -> list[str]:
-    """统一分词入口，构建侧与检索侧共用"""
+    """统一分词入口，构建侧与检索侧共用，保证词典与切分结果一致"""
     return jieba.lcut(text)
+
+
+# 模块导入即尝试加载词典，使 BM25 构建与查询侧均生效
+load_medical_dict()
 
 
 def load_case_documents(cases_dir: Path = MEDICAL_CASES_DIR) -> list[Document]:
