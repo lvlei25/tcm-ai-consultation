@@ -35,33 +35,33 @@
           <label>脉象（选填）<input v-model.trim="form.脉象" placeholder="示例：脉细弱" /></label>
         </div>
 
-        <h5>问寒热与汗出</h5>
+        <h5>寒热与汗出</h5>
         <div class="grid two">
           <label>寒热<select v-model="form.寒热"><option v-for="opt in options.coldHeat" :key="opt">{{ opt }}</option></select></label>
           <label>汗出<select v-model="form.汗出"><option v-for="opt in options.sweating" :key="opt">{{ opt }}</option></select></label>
         </div>
 
-        <h5>问头身胸腹</h5>
+        <h5>头身胸腹</h5>
         <div class="chips">
           <button type="button" v-for="opt in options.torso" :key="opt"
                   :class="{ active: form.头身胸腹不适.includes(opt) }"
                   @click="toggle(form.头身胸腹不适, opt)">{{ opt }}</button>
         </div>
 
-        <h5>问饮食口味</h5>
+        <h5>饮食口味</h5>
         <div class="grid three">
           <label>饮食<select v-model="form.饮食"><option v-for="opt in options.diet" :key="opt">{{ opt }}</option></select></label>
           <label>口渴<select v-model="form.口渴"><option v-for="opt in options.thirst" :key="opt">{{ opt }}</option></select></label>
           <label>口味<select v-model="form.口味"><option v-for="opt in options.taste" :key="opt">{{ opt }}</option></select></label>
         </div>
 
-        <h5>问睡眠情志</h5>
+        <h5>睡眠情志</h5>
         <div class="grid two">
           <label>睡眠<select v-model="form.睡眠"><option v-for="opt in options.sleep" :key="opt">{{ opt }}</option></select></label>
           <label>情志<select v-model="form.情志"><option v-for="opt in options.emotion" :key="opt">{{ opt }}</option></select></label>
         </div>
 
-        <h5>问二便与经期</h5>
+        <h5>二便与经期</h5>
         <div class="grid three">
           <label>大便<select v-model="form.大便"><option v-for="opt in options.stool" :key="opt">{{ opt }}</option></select></label>
           <label>小便<select v-model="form.小便"><option v-for="opt in options.urine" :key="opt">{{ opt }}</option></select></label>
@@ -96,7 +96,7 @@
 
       <template v-else>
         <div class="step" :class="stepState('query')">
-          步骤 1/3 生成检索语句
+          步骤 1/3 由大模型生成检索语句
           <code v-if="query">{{ query }}</code>
         </div>
         <div class="step" :class="stepState('evidences')">
