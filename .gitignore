@@ -3,10 +3,16 @@
 
 # 运行产物与缓存
 .venv/
+node_modules/
+frontend/dist/
 storage/
 __pycache__/
 *.pyc
 .pytest_cache/
+
+# 本地服务日志
+*.log
+*.err
 
 # IDE 与工具目录
 .trae/

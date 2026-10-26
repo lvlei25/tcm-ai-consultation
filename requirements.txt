@@ -25,3 +25,7 @@ dashscope==1.27.4
 
 # 测试
 pytest==9.1.1
+
+# API 层（Vue 前端后端接口，spec-012）
+fastapi==0.162.0
+uvicorn==0.54.0
