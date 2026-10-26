@@ -107,6 +107,23 @@ def test_dense_query_segmented_by_jieba(monkeypatch):
     assert calls[-1] == "不寐 多梦 心悸"
 
 
+def test_connect_error_unwrapped(monkeypatch):
+    """用例 62（异常）：连接失败时展开 ExceptionGroup，透出真实原因与启动提示"""
+    instance = McpRetriever(server_url="http://127.0.0.1:8000/mcp")
+
+    async def fake_connect(query: str, top_k: int) -> str:
+        raise ExceptionGroup(
+            "unhandled errors in a TaskGroup", [ConnectionRefusedError("连接被拒绝")]
+        )
+
+    monkeypatch.setattr(instance, "_call_search_async", fake_connect)
+    with pytest.raises(RuntimeError) as exc_info:
+        instance.retrieve("不寐")
+    message = str(exc_info.value)
+    assert "ConnectionRefusedError" in message
+    assert "请确认 MCP 服务端已启动" in message
+
+
 def test_retry_with_fewer_terms(monkeypatch):
     """用例 56（正常）：全词 0 命中时按词数递减重试，首个非空结果即返回"""
     instance = McpRetriever(server_url="http://127.0.0.1:8000/mcp")

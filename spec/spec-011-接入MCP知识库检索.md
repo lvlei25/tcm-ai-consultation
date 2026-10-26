@@ -63,6 +63,14 @@ MCP 服务端需提供一个检索工具（名默认 `search`）：
 - 返回「知识库中没有…」「命中 0 条」类说明时视为空结果（返回空列表，不报错）
 - 出现无法识别的格式（既无命中块也非无命中说明）时抛明确中文异常，无 fallback
 
+## 修订三（错误透传增强，2026-10-26）
+
+Vue 前端实测报「unhandled errors in a TaskGroup」：MCP 客户端的 anyio TaskGroup 会把
+真实异常（如 ConnectionRefusedError）包在 `__exceptions__` 里，`str(exc)` 只剩笼统描述。
+`kb/mcp_retriever.py` 新增 `_describe_error()`：递归展开嵌套异常链拼接完整错误信息，
+识别连接类错误时附加「请确认 MCP 服务端已启动并监听该地址」提示。包装位置位于同步入口
+`_call_search`，异常包装与解析逻辑分离，便于测试 mock 异步层。
+
 ## 修订二（检索语义适配，2026-10-17）
 
 实测服务端 `search` 为**严格 AND** 语义（空格分词、要求所有词同时出现，实测 5 词即 0 命中），

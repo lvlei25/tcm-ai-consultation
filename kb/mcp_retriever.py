@@ -13,6 +13,25 @@ from kb.loader import tokenize
 _BLOCK_PATTERN = re.compile(r"^### (.+?)/(.+?)（命中 (\d+) 次）$", re.MULTILINE)
 # 无命中时服务端返回的中文说明特征
 _NO_HIT_MARKERS = ("命中 0 条", "没有同时包含", "没有找到", "无命中")
+# 连接类错误特征，命中时附加启动提示
+_CONNECT_MARKERS = ("ConnectionRefusedError", "ConnectError", "ConnectTimeout", "refused")
+
+
+def _describe_error(exc: BaseException) -> str:
+    """展开 ExceptionGroup 等嵌套异常，拼出完整可读的错误链"""
+    parts: list[str] = []
+    stack: list[BaseException] = [exc]
+    while stack:
+        current = stack.pop()
+        nested = getattr(current, "exceptions", None)
+        if nested:
+            stack.extend(reversed(list(nested)))
+        else:
+            parts.append(f"{type(current).__name__}: {current}")
+    detail = "；".join(parts) or str(exc)
+    if any(marker in detail for marker in _CONNECT_MARKERS):
+        detail += "（请确认 MCP 服务端已启动并监听该地址）"
+    return detail
 
 
 class McpRetriever:
@@ -69,25 +88,29 @@ class McpRetriever:
         return []
 
     def _call_search(self, query: str, top_k: int) -> str:
-        """建立临时 Streamable HTTP 会话调用检索工具，返回工具原始文本输出"""
-        return asyncio.run(self._call_search_async(query, top_k))
+        """建立临时 Streamable HTTP 会话调用检索工具，返回工具原始文本输出
 
-    async def _call_search_async(self, query: str, top_k: int) -> str:
-        """异步建立会话并调用工具，超时与连接错误抛出明确中文异常"""
+        连接、握手、调用中的任何异常统一在此包装为中文 RuntimeError，
+        ExceptionGroup 等嵌套异常经 _describe_error 展开，不做静默兜底
+        """
         try:
-            async with streamable_http_client(self.server_url) as streams:
-                read_stream, write_stream = streams
-                async with ClientSession(
-                    read_stream, write_stream, read_timeout_seconds=self.timeout_seconds
-                ) as session:
-                    await session.initialize()
-                    result = await session.call_tool(
-                        self.tool_name, {"query": query, "limit": top_k}
-                    )
+            return asyncio.run(self._call_search_async(query, top_k))
         except Exception as exc:
             raise RuntimeError(
-                f"调用 MCP 检索工具失败（{self.server_url} / {self.tool_name}）：{exc}"
+                f"调用 MCP 检索工具失败（{self.server_url} / {self.tool_name}）：{_describe_error(exc)}"
             ) from exc
+
+    async def _call_search_async(self, query: str, top_k: int) -> str:
+        """异步建立会话并调用工具"""
+        async with streamable_http_client(self.server_url) as streams:
+            read_stream, write_stream = streams
+            async with ClientSession(
+                read_stream, write_stream, read_timeout_seconds=self.timeout_seconds
+            ) as session:
+                await session.initialize()
+                result = await session.call_tool(
+                    self.tool_name, {"query": query, "limit": top_k}
+                )
         texts = [
             block.text for block in result.content if getattr(block, "text", None)
         ]

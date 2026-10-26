@@ -67,9 +67,9 @@ EVIDENCE_SNIPPET_LEN = 300  # 每条医案证据进入诊断提示词的最大�
 
 # ===== MCP 知识库 =====
 # 是否启用 MCP 知识库作为唯一检索源（false = 本地 FAISS + BM25 混合检索）
-MCP_ENABLED = os.environ.get("MCP_ENABLED", "false").strip().lower() == "false"
+MCP_ENABLED = os.environ.get("MCP_ENABLED", "false").strip().lower() == "true"
 # MCP 服务端 Streamable HTTP 端点，例：http://127.0.0.1:8000/mcp
-MCP_SERVER_URL = os.environ.get("MCP_SERVER_URL", "").strip()
+MCP_SERVER_URL = os.environ.get("MCP_SERVER_URL", "http://127.0.0.1:8000/mcp").strip()
 # MCP 检索工具名，入参 {"query": ..., "top_k": ...}，返回 JSON 数组 [{text, metadata, score}]
 MCP_SEARCH_TOOL = os.environ.get("MCP_SEARCH_TOOL", "search").strip()
 # MCP 调用超时秒数
